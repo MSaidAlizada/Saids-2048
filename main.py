@@ -1,5 +1,6 @@
 import pygame
 import random
+from copy import deepcopy
 
 pygame.init()
 
@@ -16,53 +17,52 @@ def printMousePosition():
 
 #Class for the squares
 class Square:
-    def __init__(self, number, move, cords):
+    def __init__(self, number, cords):
         self.number = number
-        self.move = move
         self.cords = cords
         self.size = 150
         self.color = (205, 193, 181)
-    def moveBox(self, direction,boxCords):
+    def moveBox(self, direction,boxCords,grid):
         moved = False
         if direction == "r":
             if boxCords[0] != 3:
-                if board[boxCords[1]][boxCords[0]+1].number == 0:
+                if grid[boxCords[1]][boxCords[0]+1].number == 0:
                     moved = True
-                    board[boxCords[1]][boxCords[0]+1].number = self.number
+                    grid[boxCords[1]][boxCords[0]+1].number = self.number
                     self.number = 0
-                    board[boxCords[1]][boxCords[0]+1].moveBox("r",[boxCords[0]+1,boxCords[1]])
-                if board[boxCords[1]][boxCords[0]+1].number == self.number:
-                    board[boxCords[1]][boxCords[0]+1].number = 2*self.number
+                    grid[boxCords[1]][boxCords[0]+1].moveBox("r",[boxCords[0]+1,boxCords[1]], grid)
+                if grid[boxCords[1]][boxCords[0]+1].number == self.number:
+                    grid[boxCords[1]][boxCords[0]+1].number = 2*self.number
                     self.number = 0
         elif direction == "l":
             if boxCords[0] != 0:
-                if board[boxCords[1]][boxCords[0]-1].number == 0:
+                if grid[boxCords[1]][boxCords[0]-1].number == 0:
                     moved = True
-                    board[boxCords[1]][boxCords[0]-1].number = self.number
+                    grid[boxCords[1]][boxCords[0]-1].number = self.number
                     self.number = 0
-                    board[boxCords[1]][boxCords[0]-1].moveBox("l",[boxCords[0]-1,boxCords[1]])
-                if board[boxCords[1]][boxCords[0]-1].number == self.number:
-                    board[boxCords[1]][boxCords[0]-1].number = 2*self.number
+                    grid[boxCords[1]][boxCords[0]-1].moveBox("l",[boxCords[0]-1,boxCords[1]], grid)
+                if grid[boxCords[1]][boxCords[0]-1].number == self.number:
+                    grid[boxCords[1]][boxCords[0]-1].number = 2*self.number
                     self.number = 0
         elif direction == "u":
             if boxCords[1] != 0:
-                if board[boxCords[1]-1][boxCords[0]].number == 0:
+                if grid[boxCords[1]-1][boxCords[0]].number == 0:
                     moved = True
-                    board[boxCords[1]-1][boxCords[0]].number = self.number
+                    grid[boxCords[1]-1][boxCords[0]].number = self.number
                     self.number = 0
-                    board[boxCords[1]-1][boxCords[0]].moveBox("u",[boxCords[0],boxCords[1]-1])
-                if board[boxCords[1]-1][boxCords[0]].number == self.number:
-                    board[boxCords[1]-1][boxCords[0]].number = 2*self.number
+                    grid[boxCords[1]-1][boxCords[0]].moveBox("u",[boxCords[0],boxCords[1]-1], grid)
+                if grid[boxCords[1]-1][boxCords[0]].number == self.number:
+                    grid[boxCords[1]-1][boxCords[0]].number = 2*self.number
                     self.number = 0
         elif direction == "d":
             if boxCords[1] != 3:
-                if board[boxCords[1]+1][boxCords[0]].number == 0:
+                if grid[boxCords[1]+1][boxCords[0]].number == 0:
                     moved = True
-                    board[boxCords[1]+1][boxCords[0]].number = self.number
+                    grid[boxCords[1]+1][boxCords[0]].number = self.number
                     self.number = 0
-                    board[boxCords[1]+1][boxCords[0]].moveBox("d",[boxCords[0],boxCords[1]+1])
-                if board[boxCords[1]+1][boxCords[0]].number == self.number:
-                    board[boxCords[1]+1][boxCords[0]].number = 2*self.number
+                    grid[boxCords[1]+1][boxCords[0]].moveBox("d",[boxCords[0],boxCords[1]+1], grid)
+                if grid[boxCords[1]+1][boxCords[0]].number == self.number:
+                    grid[boxCords[1]+1][boxCords[0]].number = 2*self.number
                     self.number = 0
         return moved
     def draw(self):
@@ -91,8 +91,8 @@ class Square:
                 self.color = (241, 206, 79)
             case 2048:
                 self.color = (241, 203, 58)
-        pygame.draw.rect(window, (188, 172, 159), (self.cords[0]+50, self.cords[1]+60, self.size, self.size))
-        pygame.draw.rect(window, self.color, (self.cords[0]+60, self.cords[1]+70, self.size-20, self.size-20))
+        pygame.draw.rect(window, (188, 172, 159), (self.cords[0]+50, self.cords[1]+80, self.size, self.size))
+        pygame.draw.rect(window, self.color, (self.cords[0]+60, self.cords[1]+90, self.size-20, self.size-20))
 
 #Helper functions for game
 def Reset():
@@ -125,7 +125,7 @@ def AddBoxes(board):
         random.choice(GetEmptyBoxes(board)).number = number
     return board
     
-def move(direction):
+def move(direction, moveBoard):
     moved = False
     match direction:
         case "r":
@@ -155,27 +155,33 @@ def move(direction):
             istart = 2
             iend = -1
             jstart = 0
-            jend = 4
-            
+            jend = 4   
     for i in range(istart,iend,istep):
         for j in range(jstart,jend,jstep):
-            if board[i][j].number != 0:
-                res = board[i][j].moveBox(direction, [j,i])
+            if moveBoard[i][j].number != 0:
+                res = moveBoard[i][j].moveBox(direction, [j,i], moveBoard)
                 if res:
                     moved = True
     return moved
 
-
+def GameOver():
+    global board
+    if len(GetEmptyBoxes(board)) == 0:
+        for i in ["r","l","u","d"]:
+            board_copy = deepcopy(board)
+            if move(i, board_copy):
+                return False
+        return True
+    return False
 #main game loop
 size = 150
-board = [[Square(0,0,[0,0]),Square(0,0,[size,0]),Square(0,0,[2*size,0]),Square(0,0,[3*size,0])],
-         [Square(0,0,[0,size]),Square(0,0,[size,size]),Square(0,0,[2*size,size]),Square(0,0,[3*size,size])],
-         [Square(0,0,[0,2*size]),Square(0,0,[size,2*size]),Square(0,0,[2*size,2*size]),Square(0,0,[3*size,2*size])],
-         [Square(0,0,[0,3*size]),Square(0,0,[size,3*size]),Square(0,0,[2*size,3*size]),Square(0,0,[3*size,3*size])]]
-moveNum = 0
+board = [[Square(0,[0,0]),Square(0,[size,0]),Square(0,[2*size,0]),Square(0,[3*size,0])],
+         [Square(0,[0,size]),Square(0,[size,size]),Square(0,[2*size,size]),Square(0,[3*size,size])],
+         [Square(0,[0,2*size]),Square(0,[size,2*size]),Square(0,[2*size,2*size]),Square(0,[3*size,2*size])],
+         [Square(0,[0,3*size]),Square(0,[size,3*size]),Square(0,[2*size,3*size]),Square(0,[3*size,3*size])]]
 score = 0
 running = True
-board = AddBoxes(board)
+AddBoxes(board)
 while running:
     pygame.time.delay(100)
     window.fill((250, 248, 239))
@@ -189,16 +195,16 @@ while running:
     #Getting keyboard input
     pressed = pygame.key.get_pressed()
     if pressed[pygame.K_RIGHT]:
-        if move("r"):
+        if move("r",board):
             board = AddBoxes(board)
     if pressed[pygame.K_LEFT]:
-        if move("l"):
+        if move("l",board):
             board = AddBoxes(board)
     if pressed[pygame.K_UP]:
-        if move("u"):
+        if move("u",board):
             board = AddBoxes(board)
     if pressed[pygame.K_DOWN]:
-        if move("d"):
+        if move("d",board):
             board = AddBoxes(board)
     if pressed[pygame.K_r]:
         Reset()
@@ -206,6 +212,11 @@ while running:
     for i in board:
         for j in i:
             j.draw()
-    pygame.display.flip()
+    #Checking if game over
+    if GameOver():
+        surface = pygame.Surface((600,600), pygame.SRCALPHA)
+        surface.fill((238,227,214,200))
+        window.blit(surface, (50,80))
+    pygame.display.update()
 
 pygame.quit()
